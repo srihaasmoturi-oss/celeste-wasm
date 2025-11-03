@@ -2,7 +2,8 @@ name: Build and Deploy Celeste WASM
 
 on:
   push:
-    branches: [ main ]  # runs on push to main branch
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
