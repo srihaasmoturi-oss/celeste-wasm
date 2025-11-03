@@ -37,13 +37,9 @@ emsdk:
 	patch -p1 --directory emsdk/upstream/emscripten/ < emsdk.2.patch
 	rm -rvf emsdk/upstream/emscripten/cache/*
 
-# --- Patch protobuf-net to ignore strong-name checks ---
+# --- Patch protobuf-net to ignore strong-name checks (optional, can be removed) ---
 patch-protobuf:
-	@echo "Patching protobuf-net for InternalsVisibleTo..."
-	# Remove public key from InternalsVisibleTo attributes
-	@find SteamKit2.WASM/protobuf-net/src/protobuf-net -name '*.cs' | while read f; do \
-		sed -i.bak 's/InternalsVisibleTo("protobuf-net.Core, PublicKeyToken=.*")/InternalsVisibleTo("protobuf-net.Core")/g' "$$f"; \
-	done
+	@echo "Switching to NuGet protobuf-net, no source patch needed."
 
 # --- Clean targets ---
 dotnetclean:
@@ -60,7 +56,7 @@ build: deps
 	pnpm i
 	rm -rf frontend/public/_framework loader/bin/Release/net9.0/publish/wwwroot/_framework || true
 
-	# Restore & publish all .NET projects with SignAssembly disabled
+	# Restore & publish loader using NuGet packages
 	NUGET_PACKAGES="$(shell realpath .)/nuget" dotnet restore loader $(DOTNETFLAGS)
 	bash replaceruntime.sh
 	NUGET_PACKAGES="$(shell realpath .)/nuget" dotnet publish loader -c Release $(DOTNETFLAGS)
