@@ -26,7 +26,7 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.4'
+          dotnet-version: '9.0.x'
 
       # Step 4: Install Node dependencies
       - name: Install project dependencies
