@@ -16,6 +16,8 @@ statics:
 # --- Clone repositories ---
 SteamKit2.WASM:
 	git clone https://github.com/MercuryWorkshop/SteamKit2.WASM --recursive
+	# Remove local protobuf-net to avoid CS0281 mismatch; use NuGet packages instead
+	rm -rf SteamKit2.WASM/protobuf-net
 
 FNA:
 	git clone https://github.com/FNA-XNA/FNA --recursive -b 25.02
