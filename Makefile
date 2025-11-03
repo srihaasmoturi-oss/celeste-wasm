@@ -37,6 +37,12 @@ emsdk:
 	patch -p1 --directory emsdk/upstream/emscripten/ < emsdk.2.patch
 	rm -rvf emsdk/upstream/emscripten/cache/*
 
+# --- Patch protobuf-net to ignore strong-name checks ---
+patch-protobuf:
+	@echo "Patching protobuf-net for InternalsVisibleTo..."
+	# Remove the public key from InternalsVisibleTo attributes
+	@find SteamKit2.WASM/protobuf-net/src/protobuf-net -name '*.cs' -exec sed -i 's/InternalsVisibleTo("protobuf-net.Core, PublicKeyToken=.*")/InternalsVisibleTo("protobuf-net.Core")/g' {} \;
+
 # --- Clean targets ---
 dotnetclean:
 	rm -rvf {loader,patcher,corefier,Steamworks}/{bin,obj} frontend/public/_framework nuget || true
@@ -45,7 +51,7 @@ clean: dotnetclean
 	rm -rvf statics MonoMod NLua FNA SteamKit2.WASM emsdk || true
 
 # --- Dependencies ---
-deps: statics FNA MonoMod NLua SteamKit2.WASM emsdk
+deps: statics FNA MonoMod NLua SteamKit2.WASM emsdk patch-protobuf
 
 # --- Build ---
 build: deps
@@ -71,4 +77,4 @@ serve: build
 publish: build
 	pnpm build
 
-.PHONY: clean build serve publish
+.PHONY: clean build serve publish patch-protobuf
