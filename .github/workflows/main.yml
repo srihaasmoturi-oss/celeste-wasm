@@ -2,7 +2,7 @@ name: Build and Deploy Celeste WASM
 
 on:
   push:
-    branches: [ main ]
+    branches: [ threads-v2 ]
   workflow_dispatch:
 
 jobs:
