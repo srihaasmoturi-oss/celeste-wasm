@@ -48,7 +48,7 @@ build: deps
 #
 	NUGET_PACKAGES="$(shell realpath .)/nuget" dotnet restore loader $(DOTNETFLAGS)
 	bash replaceruntime.sh
-	NUGET_PACKAGES="$(shell realpath .)/nuget" dotnet publish loader -c Release $(DOTNETFLAGS)
+	NUGET_PACKAGES="$(shell realpath .)/nuget" dotnet publish loader -c Release $(DOTNETFLAGS) /p:SignAssembly=false
 #
 	cp -r loader/bin/Release/net9.0/publish/wwwroot/_framework frontend/public/
 	# emscripten sucks
