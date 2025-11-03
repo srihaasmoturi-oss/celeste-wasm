@@ -47,4 +47,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: celeste-wasm
-          directory: frontend/public
+          directory: frontend
