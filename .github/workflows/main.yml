@@ -2,7 +2,7 @@ name: Build and Deploy Celeste WASM to Youware
 
 on:
   push:
-    branches: [ threads-v2 ]
+    branches: [ srihaasmoturi-oss-patch-1 ]
   workflow_dispatch:
 
 jobs:
