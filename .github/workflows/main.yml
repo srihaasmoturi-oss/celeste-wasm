@@ -22,29 +22,42 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
-      # Step 3: Install project dependencies
-      - name: Install project dependencies
-        run: pnpm i
-
-      # Step 4: Install .NET SDK 9
+      # Step 3: Install .NET SDK 9
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
+      # Step 4: Install project dependencies
+      - name: Install project dependencies
+        run: pnpm i
+
       # Step 5: Restore .NET workloads
       - name: Restore .NET workloads
         run: cd loader && dotnet workload restore && cd ..
 
-      # Step 6: Build the project
+      # Step 6: Clone and setup Emscripten
+      - name: Setup Emscripten SDK
+        run: |
+          git clone https://github.com/emscripten-core/emsdk
+          ./emsdk/emsdk install 3.1.56
+          ./emsdk/emsdk activate 3.1.56
+
+      # Step 7: Activate Emscripten environment
+      - name: Activate Emscripten
+        shell: bash
+        run: |
+          source ./emsdk/emsdk_env.sh
+          emcc --version
+
+      # Step 8: Build the project
       - name: Build Celeste-WASM
-        run: make publish
+        shell: bash
+        run: |
+          source ./emsdk/emsdk_env.sh
+          make publish
 
-      # Step 6.5: Copy src folder for Pages deployment
-      - name: Copy source folder for deployment
-        run: cp -r src frontend/src
-
-      # Step 7: Deploy to Cloudflare Pages
+      # Step 9: Deploy to Cloudflare Pages
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
