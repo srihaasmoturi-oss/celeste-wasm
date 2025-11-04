@@ -40,7 +40,8 @@ jobs:
         shell: bash
         run: |
           source ./emsdk/emsdk_env.sh
-          make publish
+          make publish CI=true
+
 
       # Step 6: Build frontend
       - name: Build frontend
