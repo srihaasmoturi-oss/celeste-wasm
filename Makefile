@@ -9,8 +9,6 @@ endif
 
 # Detect dotnet
 DOTNET_CMD := $(shell which dotnet)
-
-# Debugging: show which dotnet Makefile sees
 $(info DOTNET_CMD=$(DOTNET_CMD))
 $(info PATH=$(PATH))
 
@@ -57,10 +55,11 @@ build: deps
 	pnpm i
 	rm -rf frontend/public/_framework loader/bin/Release/net9.0/publish/wwwroot/_framework || true
 
-	# Restore & publish loader using NuGet packages
-	NUGET_PACKAGES="$(shell realpath .)/nuget" $(DOTNET_CMD) restore loader $(DOTNETFLAGS)
-	bash replaceruntime.sh
-	NUGET_PACKAGES="$(shell realpath .)/nuget" $(DOTNET_CMD) publish loader -c Release $(DOTNETFLAGS)
+	# Export NuGet path and restore/publish loader
+	export NUGET_PACKAGES="$(shell realpath .)/nuget"; \
+	$(DOTNET_CMD) restore loader $(DOTNETFLAGS); \
+	bash replaceruntime.sh; \
+	$(DOTNET_CMD) publish loader -c Release $(DOTNETFLAGS)
 
 	cp -r loader/bin/Release/net9.0/publish/wwwroot/_framework frontend/public/
 
