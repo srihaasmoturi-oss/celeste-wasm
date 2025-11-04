@@ -16,7 +16,6 @@ statics:
 # --- Clone repositories ---
 SteamKit2.WASM:
 	git clone https://github.com/srihaasmoturi-oss/SteamKit2.WASM.git --recursive
-	# Remove local protobuf-net to avoid CS0281 mismatch; use NuGet packages instead
 	rm -rf SteamKit2.WASM/protobuf-net
 
 FNA:
@@ -30,28 +29,15 @@ NLua:
 MonoMod:
 	git clone https://github.com/r58Playz/MonoMod --recursive
 
-emsdk:
-	git clone https://github.com/emscripten-core/emsdk
-	./emsdk/emsdk install 3.1.56
-	./emsdk/emsdk activate 3.1.56
-	python3 ./sanitizeemsdk.py "$(shell realpath ./emsdk/)"
-	patch -p1 --directory emsdk/upstream/emscripten/ < emsdk.patch
-	patch -p1 --directory emsdk/upstream/emscripten/ < emsdk.2.patch
-	rm -rvf emsdk/upstream/emscripten/cache/*
-
-# --- Patch protobuf-net to ignore strong-name checks (optional, can be removed) ---
-patch-protobuf:
-	@echo "Switching to NuGet protobuf-net, no source patch needed."
-
 # --- Clean targets ---
 dotnetclean:
 	rm -rvf {loader,patcher,corefier,Steamworks}/{bin,obj} frontend/public/_framework nuget || true
 
 clean: dotnetclean
-	rm -rvf statics MonoMod NLua FNA SteamKit2.WASM emsdk || true
+	rm -rvf statics MonoMod NLua FNA SteamKit2.WASM || true
 
 # --- Dependencies ---
-deps: statics FNA MonoMod NLua SteamKit2.WASM emsdk patch-protobuf
+deps: statics FNA MonoMod NLua SteamKit2.WASM
 
 # --- Build ---
 build: deps
@@ -65,7 +51,7 @@ build: deps
 
 	cp -r loader/bin/Release/net9.0/publish/wwwroot/_framework frontend/public/
 
-	# Patches for Emscripten and Dotnet
+	# Apply runtime JS tweaks for WASM (if needed)
 	sed -i 's/var offscreenCanvases \?= \?{};/var offscreenCanvases={};if(globalThis.window\&\&!window.TRANSFERRED_CANVAS){transferredCanvasNames=[".canvas"];window.TRANSFERRED_CANVAS=true;}/' frontend/public/_framework/dotnet.native.*.js
 	sed -i 's/this.appendULeb(32768)/this.appendULeb(65535)/' frontend/public/_framework/dotnet.runtime.*.js
 	sed -i 's/return runEmAsmFunction(code, sigPtr, argbuf);/return runMainThreadEmAsm(code, sigPtr, argbuf, 1);/' frontend/public/_framework/dotnet.native.*.js
@@ -77,4 +63,4 @@ serve: build
 publish: build
 	pnpm build
 
-.PHONY: clean build serve publish patch-protobuf
+.PHONY: clean build serve publish
