@@ -8,50 +8,44 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    env:
-      CI: true
     steps:
-      # 1. Checkout repository
-      - uses: actions/checkout@v4
+      # Step 1: Checkout your code
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # 2. Setup Node.js & pnpm
-      - uses: actions/setup-node@v4
+      # Step 2: Install Node & pnpm
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22.x'
-      - run: npm install -g pnpm
 
-      # 3. Setup .NET SDK
-      - uses: actions/setup-dotnet@v4
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      # Step 3: Install .NET SDK 9
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      # 4. Setup Emscripten SDK
-      - run: |
-          git clone https://github.com/emscripten-core/emsdk
-          ./emsdk/emsdk install 3.1.56
-          ./emsdk/emsdk activate 3.1.56
-          source ./emsdk/emsdk_env.sh
+      # Step 4: Install Node dependencies
+      - name: Install project dependencies
+        run: pnpm i
 
-      # 5. Build everything (WASM + loader)
+      # Step 5: Restore .NET workloads
+      - name: Restore .NET workloads
+        run: cd loader && dotnet workload restore && cd ..
+
+      # Step 6: Build the project
       - name: Build Celeste-WASM
-        shell: bash
-        run: |
-          source ./emsdk/emsdk_env.sh
-          make build
+        run: make publish
 
-      # 6. Build frontend
-      - name: Build frontend
-        working-directory: frontend
-        run: |
-          pnpm install
-          pnpm build
-          mkdir -p dist/assets
-          cp -r ../assets/* dist/assets/
-
-      # 7. Deploy to Cloudflare Pages
-      - uses: cloudflare/pages-action@v1
+      # Step 7: Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: celeste-wasm
-          directory: frontend/dist
+          directory: frontend
+
