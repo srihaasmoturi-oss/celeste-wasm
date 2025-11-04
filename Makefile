@@ -1,5 +1,14 @@
+# --- Config ---
 STATICS_RELEASE=265e23ca-337c-4e8d-b383-0e1e87300468
 DOTNETFLAGS=--nodereuse:false -v n /p:SignAssembly=false
+
+# Adjust for CI environment
+ifeq ($(CI), true)
+    DOTNETFLAGS += /p:EnableDefaultItems=false
+    DOTNET_CMD=dotnet
+else
+    DOTNET_CMD=dotnet
+endif
 
 # --- Download static dependencies ---
 statics:
@@ -45,9 +54,9 @@ build: deps
 	rm -rf frontend/public/_framework loader/bin/Release/net9.0/publish/wwwroot/_framework || true
 
 	# Restore & publish loader using NuGet packages
-	NUGET_PACKAGES="$(shell realpath .)/nuget" dotnet restore loader $(DOTNETFLAGS)
+	NUGET_PACKAGES="$(shell realpath .)/nuget" $(DOTNET_CMD) restore loader $(DOTNETFLAGS)
 	bash replaceruntime.sh
-	NUGET_PACKAGES="$(shell realpath .)/nuget" dotnet publish loader -c Release $(DOTNETFLAGS)
+	NUGET_PACKAGES="$(shell realpath .)/nuget" $(DOTNET_CMD) publish loader -c Release $(DOTNETFLAGS)
 
 	cp -r loader/bin/Release/net9.0/publish/wwwroot/_framework frontend/public/
 
@@ -63,4 +72,4 @@ serve: build
 publish: build
 	pnpm build
 
-.PHONY: clean build serve publish
+.PHONY: clean build serve publish deps statics
