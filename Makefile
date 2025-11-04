@@ -5,10 +5,14 @@ DOTNETFLAGS=--nodereuse:false -v n /p:SignAssembly=false
 # Adjust for CI environment
 ifeq ($(CI), true)
     DOTNETFLAGS += /p:EnableDefaultItems=false
-    DOTNET_CMD=dotnet
+    DOTNET_CMD=$(shell which dotnet)
 else
     DOTNET_CMD=dotnet
 endif
+
+# Debugging: show which dotnet Makefile sees
+$(info DOTNET_CMD=$(DOTNET_CMD))
+$(info PATH=$(PATH))
 
 # --- Download static dependencies ---
 statics:
