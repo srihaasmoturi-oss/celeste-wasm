@@ -8,63 +8,58 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-
     steps:
+      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Step 2: Setup Node.js and pnpm
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22.x'
-
       - name: Install pnpm
         run: npm install -g pnpm
 
+      # Step 3: Setup .NET SDK
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      # Optional: install emsdk (if your Makefile needs it). It's heavy and slow.
-      - name: Setup Emscripten SDK (optional, remove if not needed)
-        shell: bash
+      # Step 4: Restore .NET workloads
+      - name: Restore .NET workloads
+        run: dotnet workload restore loader
+
+      # Step 5: Setup Emscripten SDK
+      - name: Setup Emscripten SDK
         run: |
           git clone https://github.com/emscripten-core/emsdk
           ./emsdk/emsdk install 3.1.56
           ./emsdk/emsdk activate 3.1.56
+          source ./emsdk/emsdk_env.sh
 
-      - name: Build WASM + .NET (Makefile)
+      # Step 6: Build WASM and loader
+      - name: Build Celeste-WASM
         shell: bash
-        env:
-          # ensure replaceruntime.sh etc. work in non-interactive runner
-          NUGET_PACKAGES: ${{ github.workspace }}/nuget
         run: |
-          # if you installed emsdk above, source it so its tools are available
-          if [ -f ./emsdk/emsdk_env.sh ]; then source ./emsdk/emsdk_env.sh || true; fi
-
-          # run the project's Makefile publish target
+          source ./emsdk/emsdk_env.sh
           make publish
 
-      - name: Build frontend (Vite)
-        shell: bash
+      # Step 7: Build frontend
+      - name: Build frontend
+        working-directory: frontend
         run: |
-          cd frontend
           pnpm install
           pnpm build
-          # optional: copy site-level assets into dist if needed
-          if [ -d ../assets ]; then
-            mkdir -p dist/assets
-            cp -r ../assets/* dist/assets/ || true
-          fi
-          cd ..
+          mkdir -p dist/assets
+          cp -r ../assets/* dist/assets/
 
+      # Step 8: Deploy to Cloudflare Pages
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # MUST match the project name in Cloudflare Pages exactly:
           projectName: celeste-wasm
           directory: frontend/dist
