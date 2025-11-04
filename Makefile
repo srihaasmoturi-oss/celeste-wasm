@@ -1,16 +1,5 @@
-# --- Config ---
 STATICS_RELEASE=265e23ca-337c-4e8d-b383-0e1e87300468
 DOTNETFLAGS=--nodereuse:false -v n /p:SignAssembly=false
-
-# Adjust for CI environment
-ifeq ($(CI), true)
-    DOTNETFLAGS += /p:EnableDefaultItems=false
-endif
-
-# Detect dotnet
-DOTNET_CMD := $(shell which dotnet)
-$(info DOTNET_CMD=$(DOTNET_CMD))
-$(info PATH=$(PATH))
 
 # --- Download static dependencies ---
 statics:
@@ -27,6 +16,7 @@ statics:
 # --- Clone repositories ---
 SteamKit2.WASM:
 	git clone https://github.com/srihaasmoturi-oss/SteamKit2.WASM.git --recursive
+	# Remove local protobuf-net to avoid CS0281 mismatch; use NuGet packages instead
 	rm -rf SteamKit2.WASM/protobuf-net
 
 FNA:
@@ -40,31 +30,42 @@ NLua:
 MonoMod:
 	git clone https://github.com/r58Playz/MonoMod --recursive
 
+emsdk:
+	git clone https://github.com/emscripten-core/emsdk
+	./emsdk/emsdk install 3.1.56
+	./emsdk/emsdk activate 3.1.56
+	python3 ./sanitizeemsdk.py "$(shell realpath ./emsdk/)"
+	patch -p1 --directory emsdk/upstream/emscripten/ < emsdk.patch
+	patch -p1 --directory emsdk/upstream/emscripten/ < emsdk.2.patch
+	rm -rvf emsdk/upstream/emscripten/cache/*
+
+# --- Patch protobuf-net to ignore strong-name checks (optional, can be removed) ---
+patch-protobuf:
+	@echo "Switching to NuGet protobuf-net, no source patch needed."
+
 # --- Clean targets ---
 dotnetclean:
 	rm -rvf {loader,patcher,corefier,Steamworks}/{bin,obj} frontend/public/_framework nuget || true
 
 clean: dotnetclean
-	rm -rvf statics MonoMod NLua FNA SteamKit2.WASM || true
+	rm -rvf statics MonoMod NLua FNA SteamKit2.WASM emsdk || true
 
 # --- Dependencies ---
-deps: statics FNA MonoMod NLua SteamKit2.WASM
+deps: statics FNA MonoMod NLua SteamKit2.WASM emsdk patch-protobuf
 
 # --- Build ---
 build: deps
 	pnpm i
 	rm -rf frontend/public/_framework loader/bin/Release/net9.0/publish/wwwroot/_framework || true
 
-	# Export NuGet path for this shell session
-	export NUGET_PACKAGES="$(shell realpath .)/nuget"; \
-	$(DOTNET_CMD) restore loader $(DOTNETFLAGS); \
-	bash replaceruntime.sh; \
-	$(DOTNET_CMD) publish loader -c Release $(DOTNETFLAGS)
+	# Restore & publish loader using NuGet packages
+	NUGET_PACKAGES="$(shell realpath .)/nuget" dotnet restore loader $(DOTNETFLAGS)
+	bash replaceruntime.sh
+	NUGET_PACKAGES="$(shell realpath .)/nuget" dotnet publish loader -c Release $(DOTNETFLAGS)
 
-	# Copy published framework to frontend
 	cp -r loader/bin/Release/net9.0/publish/wwwroot/_framework frontend/public/
 
-	# Apply runtime JS tweaks for WASM
+	# Patches for Emscripten and Dotnet
 	sed -i 's/var offscreenCanvases \?= \?{};/var offscreenCanvases={};if(globalThis.window\&\&!window.TRANSFERRED_CANVAS){transferredCanvasNames=[".canvas"];window.TRANSFERRED_CANVAS=true;}/' frontend/public/_framework/dotnet.native.*.js
 	sed -i 's/this.appendULeb(32768)/this.appendULeb(65535)/' frontend/public/_framework/dotnet.runtime.*.js
 	sed -i 's/return runEmAsmFunction(code, sigPtr, argbuf);/return runMainThreadEmAsm(code, sigPtr, argbuf, 1);/' frontend/public/_framework/dotnet.native.*.js
@@ -76,4 +77,6 @@ serve: build
 publish: build
 	pnpm build
 
-.PHONY: clean build serve publish deps statics
+.PHONY: clean build serve publish patch-protobuf
+
+
