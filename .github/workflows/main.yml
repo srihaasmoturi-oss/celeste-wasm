@@ -43,8 +43,22 @@ jobs:
       - name: Build Celeste-WASM
         shell: bash
         run: |
+          # Load Emscripten environment
           source ./emsdk/emsdk_env.sh
+      
+          # Ensure dotnet CLI is in PATH
+          export PATH=$PATH:/usr/share/dotnet
+      
+          # Restore .NET workloads for loader (like 'sudo dotnet workload restore loader')
+          dotnet workload restore loader
+      
+          # Restore NuGet packages and publish loader
+          NUGET_PACKAGES="$(pwd)/nuget" dotnet restore loader --nodereuse:false -v n /p:SignAssembly=false
+          NUGET_PACKAGES="$(pwd)/nuget" dotnet publish loader -c Release --nodereuse:false -v n /p:SignAssembly=false
+      
+          # Build the WASM via Makefile
           make publish
+
 
       # Step 7: Build frontend
       - name: Build frontend
