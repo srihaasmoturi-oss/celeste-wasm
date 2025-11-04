@@ -70,7 +70,7 @@ jobs:
       - name: Checkout Youware repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/celeste-wasm
+          repository: ${{ github.repository_owner }}/celesteweb
           path: youware-repo
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
