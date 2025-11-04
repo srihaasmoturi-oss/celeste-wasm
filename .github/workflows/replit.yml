@@ -1,0 +1,73 @@
+name: Build and Deploy Celeste WASM
+
+on:
+  push:
+    branches: [ threads-v2 ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Node.js & pnpm
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      # Step 3: Install .NET SDK 9
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # Step 4: Install project dependencies
+      - name: Install project dependencies
+        run: pnpm i
+
+      # Step 5: Restore .NET workloads
+      - name: Restore .NET workloads
+        run: cd loader && dotnet workload restore && cd ..
+
+      # Step 6: Clone and setup Emscripten
+      - name: Setup Emscripten SDK
+        run: |
+          git clone https://github.com/emscripten-core/emsdk
+          ./emsdk/emsdk install 3.1.56
+          ./emsdk/emsdk activate 3.1.56
+      # Step 7: Activate Emscripten environment
+      - name: Activate Emscripten
+        shell: bash
+        run: |
+          source ./emsdk/emsdk_env.sh
+          emcc --version
+      # Step 8: Build the TSX/JS frontend
+      - name: Build frontend
+        shell: bash
+        run: |
+          cd frontend
+          pnpm install
+          # Using Vite for TSX -> JS build
+          pnpm build
+          cd ..
+      # Step 9: Build the .NET / WASM backend
+      - name: Build Celeste-WASM
+        shell: bash
+        run: |
+          source ./emsdk/emsdk_env.sh
+          make publish
+      # Step 10: Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: celeste-wasm
+          directory: frontend/dist  # <-- point to the Vite build output
