@@ -9,7 +9,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout your code
+      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -22,15 +22,15 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
-      # Step 3: Install .NET SDK 9
+      # Step 3: Install project dependencies
+      - name: Install project dependencies
+        run: pnpm i
+
+      # Step 4: Install .NET SDK 9
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
-
-      # Step 4: Install Node dependencies
-      - name: Install project dependencies
-        run: pnpm i
 
       # Step 5: Restore .NET workloads
       - name: Restore .NET workloads
@@ -39,6 +39,10 @@ jobs:
       # Step 6: Build the project
       - name: Build Celeste-WASM
         run: make publish
+
+      # Step 6.5: Copy src folder for Pages deployment
+      - name: Copy source folder for deployment
+        run: cp -r src frontend/src
 
       # Step 7: Deploy to Cloudflare Pages
       - name: Deploy to Cloudflare Pages
