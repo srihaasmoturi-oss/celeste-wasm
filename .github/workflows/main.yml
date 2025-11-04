@@ -9,6 +9,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
+
       # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,42 +28,42 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      # Step 4: Restore .NET workloads
-      - name: Restore .NET workloads
-        run: dotnet workload restore loader
+      # Step 4: Restore .NET workloads and publish loader
+      - name: Restore .NET workloads and publish loader
+        shell: bash
+        run: |
+          # Add dotnet to PATH for this shell
+          export PATH="$PATH:/opt/hostedtoolcache/dotnet"
+
+          # Restore workloads (equivalent to sudo dotnet workload restore)
+          dotnet workload restore loader
+
+          # Restore & publish loader
+          NUGET_PACKAGES="$(pwd)/nuget" dotnet restore loader --nodereuse:false -v n /p:SignAssembly=false
+          NUGET_PACKAGES="$(pwd)/nuget" dotnet publish loader -c Release --nodereuse:false -v n /p:SignAssembly=false
 
       # Step 5: Setup Emscripten SDK
       - name: Setup Emscripten SDK
+        shell: bash
         run: |
           git clone https://github.com/emscripten-core/emsdk
           ./emsdk/emsdk install 3.1.56
           ./emsdk/emsdk activate 3.1.56
           source ./emsdk/emsdk_env.sh
 
-      # Step 6: Build WASM and loader
-      - name: Build Celeste-WASM
+      # Step 6: Build WASM via Makefile
+      - name: Build WASM
         shell: bash
         run: |
-          # Load Emscripten environment
           source ./emsdk/emsdk_env.sh
-      
-          # Ensure dotnet CLI is in PATH
-          export PATH=$PATH:/usr/share/dotnet
-      
-          # Restore .NET workloads for loader (like 'sudo dotnet workload restore loader')
-          dotnet workload restore loader
-      
-          # Restore NuGet packages and publish loader
-          NUGET_PACKAGES="$(pwd)/nuget" dotnet restore loader --nodereuse:false -v n /p:SignAssembly=false
-          NUGET_PACKAGES="$(pwd)/nuget" dotnet publish loader -c Release --nodereuse:false -v n /p:SignAssembly=false
-      
-          # Build the WASM via Makefile
+          # Ensure dotnet is in PATH for Makefile commands
+          export PATH="$PATH:/opt/hostedtoolcache/dotnet"
           make publish
-
 
       # Step 7: Build frontend
       - name: Build frontend
         working-directory: frontend
+        shell: bash
         run: |
           pnpm install
           pnpm build
