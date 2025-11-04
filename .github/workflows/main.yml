@@ -50,19 +50,27 @@ jobs:
           source ./emsdk/emsdk_env.sh
           emcc --version
 
-      # --- Step 8: Build the TSX/JS frontend ---
-      - name: Build frontend
+      # --- Step 8: Build the TSX/JS frontend and WASM backend ---
+      - name: Build WASM + Frontend
         shell: bash
         run: |
+          # Activate Emscripten
+          source ./emsdk/emsdk_env.sh
+          emcc --version
+      
+          # Build Celeste-WASM
+          make publish VERBOSE=1
+      
+          # Build frontend (Vite TSX -> JS)
           cd frontend
           pnpm install
           pnpm build
       
-          # Copy all assets (images, webp, etc.) into the build folder
+          # Copy assets into dist
           mkdir -p dist/assets
           cp -r ../assets/* dist/assets/
-      
           cd ..
+
       
       # --- Step 10: Deploy to Cloudflare Pages ---
       - name: Deploy to Cloudflare Pages
