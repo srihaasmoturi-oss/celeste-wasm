@@ -1,4 +1,4 @@
-name: Build and Deploy Celeste WASM
+name: Build and Deploy Celeste WASM to Youware
 
 on:
   push:
@@ -42,32 +42,78 @@ jobs:
           git clone https://github.com/emscripten-core/emsdk
           ./emsdk/emsdk install 3.1.56
           ./emsdk/emsdk activate 3.1.56
+      
       # Step 7: Activate Emscripten environment
       - name: Activate Emscripten
         shell: bash
         run: |
           source ./emsdk/emsdk_env.sh
           emcc --version
+      
       # Step 8: Build the TSX/JS frontend
       - name: Build frontend
         shell: bash
         run: |
           cd frontend
           pnpm install
-          # Using Vite for TSX -> JS build
           pnpm build
           cd ..
+      
       # Step 9: Build the .NET / WASM backend
       - name: Build Celeste-WASM
         shell: bash
         run: |
           source ./emsdk/emsdk_env.sh
           make publish
-      # Step 10: Deploy to Cloudflare Pages
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+      
+      # Step 10: Checkout Youware repository
+      - name: Checkout Youware repository
+        uses: actions/checkout@v4
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: celeste-wasm
-          directory: frontend/dist  # <-- point to the Vite build output
+          repository: ${{ github.repository_owner }}/youware-celeste
+          path: youware-repo
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+      
+      # Step 11: Copy Celeste build output to Youware public/
+      - name: Copy build output to Youware
+        run: |
+          if [ -d "youware-repo" ]; then
+            mkdir -p youware-repo/public
+            cp -r frontend/dist/* youware-repo/public/
+            echo "Build output copied to Youware repository"
+          else
+            echo "Youware repository not found, skipping push"
+          fi
+
+      # Step 12: Build Youware project
+      - name: Build Youware project
+        working-directory: youware-repo
+        run: |
+          npm install
+          npm run build
+        continue-on-error: true
+
+      # Step 13: Commit and push to Youware repository
+      - name: Commit and push to Youware
+        working-directory: youware-repo
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Build: Update Celeste WASM from $(date +%Y-%m-%d\ %H:%M:%S)"
+            git push
+          fi
+        continue-on-error: true
+
+      # Optional: Upload dist/ as artifact for debugging
+      - name: Upload build artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: celeste-wasm-build
+          path: frontend/dist/
+          retention-days: 7
