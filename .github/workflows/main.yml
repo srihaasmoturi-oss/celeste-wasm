@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Setup Node.js and pnpm
+      # Step 2: Setup Node.js + pnpm
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -26,25 +26,33 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      # Step 4: Setup Emscripten
+      # Step 4: Setup Emscripten SDK
       - name: Setup Emscripten SDK
         run: |
           git clone https://github.com/emscripten-core/emsdk
-          ./emsdk/emsdk install 3.1.56
-          ./emsdk/emsdk activate 3.1.56
+          cd emsdk
+          ./emsdk install 3.1.56
+          ./emsdk activate 3.1.56
+          echo "source $(pwd)/emsdk_env.sh" >> $HOME/.bashrc
+          echo "EMSDK=$(pwd)" >> $GITHUB_ENV
+      - name: Load Emscripten Environment
+        run: |
+          source $HOME/.bashrc
+          emcc --version
 
       # Step 5: Build everything
       - name: Build Celeste-WASM
         shell: bash
         run: |
-          source ./emsdk/emsdk_env.sh
+          source $HOME/.bashrc
+          dotnet --version
           make publish
 
           cd frontend
           pnpm install
           pnpm build
           mkdir -p dist/assets
-          cp -r ../assets/* dist/assets/
+          cp -r ../assets/* dist/assets/ || echo "No external assets found"
           cd ..
 
       # Step 6: Deploy to Cloudflare Pages
