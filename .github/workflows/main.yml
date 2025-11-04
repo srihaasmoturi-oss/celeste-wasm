@@ -8,42 +8,38 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      CI: true
     steps:
-      # Step 1: Checkout repository
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      # 1. Checkout repository
+      - uses: actions/checkout@v4
 
-      # Step 2: Setup Node.js and pnpm
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # 2. Setup Node.js & pnpm
+      - uses: actions/setup-node@v4
         with:
           node-version: '22.x'
-      - name: Install pnpm
-        run: npm install -g pnpm
+      - run: npm install -g pnpm
 
-      # Step 3: Setup .NET SDK
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+      # 3. Setup .NET SDK
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      # Step 4: Setup Emscripten SDK
-      - name: Setup Emscripten SDK
-        run: |
+      # 4. Setup Emscripten SDK
+      - run: |
           git clone https://github.com/emscripten-core/emsdk
           ./emsdk/emsdk install 3.1.56
           ./emsdk/emsdk activate 3.1.56
           source ./emsdk/emsdk_env.sh
 
-      # Step 5: Build everything (WASM + loader)
+      # 5. Build everything (WASM + loader)
       - name: Build Celeste-WASM
         shell: bash
         run: |
           source ./emsdk/emsdk_env.sh
-          make publish CI=true
+          make build
 
-
-      # Step 6: Build frontend
+      # 6. Build frontend
       - name: Build frontend
         working-directory: frontend
         run: |
@@ -52,9 +48,8 @@ jobs:
           mkdir -p dist/assets
           cp -r ../assets/* dist/assets/
 
-      # Step 7: Deploy to Cloudflare Pages
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+      # 7. Deploy to Cloudflare Pages
+      - uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
