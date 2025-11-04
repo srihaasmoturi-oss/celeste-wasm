@@ -9,7 +9,6 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-
       # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -28,49 +27,31 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      # Step 4: Restore .NET workloads and publish loader
-      - name: Restore .NET workloads and publish loader
-        shell: bash
-        run: |
-          # Add dotnet to PATH for this shell
-          export PATH="$PATH:/opt/hostedtoolcache/dotnet"
-
-          # Restore workloads (equivalent to sudo dotnet workload restore)
-          dotnet workload restore loader
-
-          # Restore & publish loader
-          NUGET_PACKAGES="$(pwd)/nuget" dotnet restore loader --nodereuse:false -v n /p:SignAssembly=false
-          NUGET_PACKAGES="$(pwd)/nuget" dotnet publish loader -c Release --nodereuse:false -v n /p:SignAssembly=false
-
-      # Step 5: Setup Emscripten SDK
+      # Step 4: Setup Emscripten SDK
       - name: Setup Emscripten SDK
-        shell: bash
         run: |
           git clone https://github.com/emscripten-core/emsdk
           ./emsdk/emsdk install 3.1.56
           ./emsdk/emsdk activate 3.1.56
           source ./emsdk/emsdk_env.sh
 
-      # Step 6: Build WASM via Makefile
-      - name: Build WASM
+      # Step 5: Build everything (WASM + loader)
+      - name: Build Celeste-WASM
         shell: bash
         run: |
           source ./emsdk/emsdk_env.sh
-          # Ensure dotnet is in PATH for Makefile commands
-          export PATH="$PATH:/opt/hostedtoolcache/dotnet"
           make publish
 
-      # Step 7: Build frontend
+      # Step 6: Build frontend
       - name: Build frontend
         working-directory: frontend
-        shell: bash
         run: |
           pnpm install
           pnpm build
           mkdir -p dist/assets
           cp -r ../assets/* dist/assets/
 
-      # Step 8: Deploy to Cloudflare Pages
+      # Step 7: Deploy to Cloudflare Pages
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
