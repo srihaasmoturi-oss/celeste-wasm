@@ -55,12 +55,13 @@ build: deps
 	pnpm i
 	rm -rf frontend/public/_framework loader/bin/Release/net9.0/publish/wwwroot/_framework || true
 
-	# Export NuGet path and restore/publish loader
+	# Export NuGet path for this shell session
 	export NUGET_PACKAGES="$(shell realpath .)/nuget"; \
 	$(DOTNET_CMD) restore loader $(DOTNETFLAGS); \
 	bash replaceruntime.sh; \
 	$(DOTNET_CMD) publish loader -c Release $(DOTNETFLAGS)
 
+	# Copy published framework to frontend
 	cp -r loader/bin/Release/net9.0/publish/wwwroot/_framework frontend/public/
 
 	# Apply runtime JS tweaks for WASM
