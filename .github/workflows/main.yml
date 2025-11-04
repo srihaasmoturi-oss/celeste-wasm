@@ -70,7 +70,7 @@ jobs:
       - name: Checkout Youware repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/youware-celeste
+          repository: ${{ github.repository_owner }}/celeste-wasm
           path: youware-repo
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
@@ -112,7 +112,7 @@ jobs:
       # Optional: Upload dist/ as artifact for debugging
       - name: Upload build artifact
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: celeste-wasm-build
           path: frontend/dist/
