@@ -1,4 +1,4 @@
-name: Build and Deploy Celeste WASM
+name: Build and Deploy Celeste WASM Replit
 
 on:
   push:
