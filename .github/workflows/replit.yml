@@ -42,32 +42,35 @@ jobs:
           git clone https://github.com/emscripten-core/emsdk
           ./emsdk/emsdk install 3.1.56
           ./emsdk/emsdk activate 3.1.56
+
       # Step 7: Activate Emscripten environment
       - name: Activate Emscripten
         shell: bash
         run: |
           source ./emsdk/emsdk_env.sh
           emcc --version
+
       # Step 8: Build the TSX/JS frontend
       - name: Build frontend
         shell: bash
         run: |
           cd frontend
           pnpm install
-          # Using Vite for TSX -> JS build
           pnpm build
           cd ..
+
       # Step 9: Build the .NET / WASM backend
       - name: Build Celeste-WASM
         shell: bash
         run: |
           source ./emsdk/emsdk_env.sh
           make publish
-      # Step 10: Deploy to Replit
-      - name: Deploy to Replit
+
+      # Step 10: Deploy to GitHub repo for Replit
+      - name: Deploy to Replit GitHub Repo
         shell: bash
         run: |
-          echo "Deploying to Replit..."
+          echo "Deploying to Replit GitHub repository..."
       
           # Setup Git config
           git config --global user.email "action@github.com"
@@ -81,9 +84,9 @@ jobs:
             git init
           fi
       
-          # Add remote if not present
+          # Add remote (directly using GITHUB_TOKEN)
           if ! git remote | grep -q "replit"; then
-            git remote add replit https://$REPLIT_DEPLOY_TOKEN@${{ secrets.REPLIT_GIT_URL }}
+            git remote add replit https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/srihaasmoturi-oss/Celeste-Please-Work.git
           fi
       
           # Stage all files
@@ -99,5 +102,3 @@ jobs:
           # Force push to main (will create main if it doesn't exist)
           git branch -M main
           git push --force replit main
-      
-      
