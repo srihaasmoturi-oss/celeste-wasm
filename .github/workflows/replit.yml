@@ -67,19 +67,37 @@ jobs:
       - name: Deploy to Replit
         shell: bash
         run: |
-          # Create deploy folder (in case it's not built)
-          mkdir -p frontend/dist
           echo "Deploying to Replit..."
-
+      
           # Setup Git config
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
-
-          # Initialize temp repo for pushing to Replit
+      
+          # Go to frontend build output
           cd frontend/dist
-          git init
-          git remote add replit https://$REPLIT_DEPLOY_TOKEN@${{ secrets.REPLIT_GIT_URL }}
-          git add .
-          git commit -m "Deploy build $(date +%Y-%m-%d:%H:%M:%S)"
+      
+          # Initialize local repo if needed
+          if [ ! -d ".git" ]; then
+            git init
+          fi
+      
+          # Add remote if not present
+          if ! git remote | grep -q "replit"; then
+            git remote add replit https://$REPLIT_DEPLOY_TOKEN@${{ secrets.REPLIT_GIT_URL }}
+          fi
+      
+          # Stage all files
+          git add -A
+      
+          # Commit changes only if there are any
+          if git diff --cached --quiet; then
+            echo "No changes to commit, skipping commit."
+          else
+            git commit -m "Deploy build $(date +%Y-%m-%d:%H:%M:%S)"
+          fi
+      
+          # Force push to main (will create main if it doesn't exist)
+          git branch -M main
           git push --force replit main
-
+      
+      
