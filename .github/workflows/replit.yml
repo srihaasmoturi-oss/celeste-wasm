@@ -81,5 +81,5 @@ jobs:
           git remote add replit https://$REPLIT_DEPLOY_TOKEN@${{ secrets.REPLIT_GIT_URL }}
           git add .
           git commit -m "Deploy build $(date +%Y-%m-%d:%H:%M:%S)"
-          git push --force replit master
+          git push --force replit main
 
