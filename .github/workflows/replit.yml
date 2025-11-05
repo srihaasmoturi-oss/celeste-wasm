@@ -86,7 +86,7 @@ jobs:
       
           # Add remote (directly using GITHUB_TOKEN)
           if ! git remote | grep -q "replit"; then
-            git remote add replit https://$REPLIT_PAT@github.com/srihaasmoturi-oss/Celeste-Please-Work.git
+            git remote add replit https://${{ secrets.REPLIT_PAT }}@github.com/srihaasmoturi-oss/Celeste-Please-Work.git
           fi
       
           # Stage all files
