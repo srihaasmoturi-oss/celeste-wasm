@@ -63,11 +63,23 @@ jobs:
         run: |
           source ./emsdk/emsdk_env.sh
           make publish
-      # Step 10: Deploy to Cloudflare Pages
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: celeste-wasm
-          directory: frontend/dist  # <-- point to the Vite build output
+      # Step 10: Deploy to Replit
+      - name: Deploy to Replit
+        shell: bash
+        run: |
+          # Create deploy folder (in case it's not built)
+          mkdir -p frontend/dist
+          echo "Deploying to Replit..."
+
+          # Setup Git config
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+          # Initialize temp repo for pushing to Replit
+          cd frontend/dist
+          git init
+          git remote add replit https://$REPLIT_DEPLOY_TOKEN@${{ secrets.REPLIT_GIT_URL }}
+          git add .
+          git commit -m "Deploy build $(date +%Y-%m-%d:%H:%M:%S)"
+          git push --force replit master
+
